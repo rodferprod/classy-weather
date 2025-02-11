@@ -35,13 +35,18 @@ function formatDay(dateStr) {
 class App extends React.Component {
 
     state = {
-        location: "rio de janeiro",
+        location: "",
         isLoading: false,
         displayLocation: '',
         weather: {}
     }
 
     fetchWeather = async () => {
+        if (this.state.location.length < 2) {
+            // Cleaning the weather state if the location field have
+            // less than 2 letters, unmounting Weather component
+            return this.setState({ weather: {} });
+        }
         try {
             this.setState({ isLoading: true });
 
@@ -79,8 +84,26 @@ class App extends React.Component {
 
     setLocation = (ev) => this.setState({ location: ev.target.value });
 
+    // It's like useEffect with empty array of dependencies []
+    // This will be called just on initial render
     componentDidMount() {
+        //this.fetchWeather();
 
+        // Getting the location from localStorage and setting the location
+        // and it'll make an update and trigger the fetch method.
+        this.setState({ location: localStorage.getItem('location') || "" });
+    }
+
+    // It's like useEffect with location as dependency [location]
+    // This will not be called on initial render, but every re-render
+    componentDidUpdate(prevProps, prevState) {
+        // Checking if the previous location is different to the actual
+        if (this.state.location !== prevState.location) {
+            // Here we're fetching weather for each changes in the location field.
+            this.fetchWeather();
+            // Saving the location on localStorage while it changes
+            localStorage.setItem('location', this.state.location);
+        }
     }
 
     render() {
@@ -88,7 +111,7 @@ class App extends React.Component {
             <div className="app">
                 <h1>Classy Weather</h1>
                 <Input location={this.state.location} onChangeLocation={this.setLocation} />
-                <button onClick={this.fetchWeather}>Get weather</button>
+                {/*<button onClick={this.fetchWeather}>Get weather</button>*/}
                 {this.state.isLoading && <div className="loader">Loading...</div>}
 
                 {this.state.weather.weathercode && (
@@ -113,6 +136,9 @@ class Input extends React.Component {
 }
 
 class Weather extends React.Component {
+    componentWillUnmount() {
+        console.log('Weather component unmount!')
+    }
     render() {
         const {
             temperature_2m_max: max,
